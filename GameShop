@@ -1,0 +1,526 @@
+# Játékkereskedés WPF Projekt
+
+Ez a projekt egy WPF alkalmazás, amely bemutatja a ListView és ComboBox vezérlők használatát egy játékbolt kontextusában. A program lehetővé teszi játékok és vásárlók kezelését, valamint rendelések létrehozását.
+## Funkcionalitás
+
+- **ListView:** Játékok és vásárlók táblázatos megjelenítése különálló fülön.
+- **ComboBox:** Vásárlók és játékok kiválasztása rendelések létrehozásához.
+- **Rendeléskezelés:** Vásárló-játék párosítások mentése és megjelenítése.
+
+## Felépítés
+
+### XAML (MainWindow.xaml)
+A felület két fő sorra oszlik egy `Grid` segítségével:
+- **Első sor:** TabIndex, melyben 4 TabItem található(Availible Games, Customers, Pairing, Orders).
+- **Második sor:** Menüelemek, melyek eltérőek minden kiválasztott TabIndexnél:
+  - Availible Games: Egy `ListView` kiírja a játékokat tartalmazó beolvasott fájlból az adatokat("games.txt")
+  - Customers: Egy `ListView` kiírja a vásárlókat tartalmazó beolvasott fájlból az adatokat("customers".txt")
+  - Pairing: A vásárlókat és a játékokat össze lehet párosítani, és elmenteni egy "orders.txt" fájlba.
+  - Orders: Az "orders.txt" fájlban lévő adatokat kiírja a program. Választani lehet játékot, ezesetben kiírja a vásárlóit az adott játéknak, vagy vásárlót, ezesetben kiírja, hogy mennyi játékot vett a vásárló.
+
+#### Teljes ablak struktúrája
+```c#
+<Window x:Class="Wpf_1_GameShop.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Wpf_1_GameShop"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="450" Width="800">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto" />
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+```
+1. A Grid.RowDefinitons két sort hoz létre.
+2. A Height="450" Width="800" az ablak méretét állítja be pixelben.
+
+
+1. x:Name="brandTree": Egyedi azonosító, hogy a C# kódban hivatkozhassunk rá.
+2. Grid.Column="0": A bal oszlopba kerül.
+3. Margin="10": 10 pixel távolság a szélektől.
+4. SelectedItemChanged="BrandTree_SelectedItemChanged": Eseménykezelő, amely akkor fut, ha a felhasználó kiválaszt egy márkát.
+5. <"DataTemplate">: Meghatározza, hogyan jelenjen meg egy elem (itt a CarBrand objektum).
+6. Text="{Binding BrandName}": A CarBrand osztály BrandName tulajdonságát köti a TextBlock-hoz, így a márkák nevei látszanak.
+
+### Űrlap definíciója:
+```c#
+<StackPanel Grid.Row="0" Orientation="Vertical" Margin="0,0,0,10">
+    <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+        <TextBlock Text="Modell neve:" Width="80"/>
+        <TextBox x:Name="modelNameInput" Width="150"/>
+    </StackPanel>
+    <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+        <TextBlock Text="Évjárat:" Width="80"/>
+        <TextBox x:Name="yearInput" Width="150"/>
+    </StackPanel>
+    <!-- Ár és Szín hasonlóan -->
+    <Button x:Name="addModelButton" Content="Új modell hozzáadása" Width="150" Click="AddModelButton_Click"/>
+</StackPanel>
+```
+1. StackPanel Orientation="Vertical": Függőlegesen rendezi a mezőket.
+2. Orientation="Horizontal": Minden sorban a TextBlock (címke) és a TextBox (bemenet) vízszintesen helyezkedik el.
+3. x:Name="modelNameInput": Azonosító a TextBox-nak, hogy a C# kódban elérjük a beírt szöveget.
+4. Click="AddModelButton_Click": A gomb megnyomásakor futó eseménykezelő neve.
+
+### ListView definíciója
+```c#
+<ListView x:Name="modelList" Grid.Row="1">
+    <ListView.View>
+        <GridView>
+            <GridViewColumn Header="Modell" Width="150" DisplayMemberBinding="{Binding ModelName}"/>
+            <GridViewColumn Header="Évjárat" Width="80" DisplayMemberBinding="{Binding Year}"/>
+            <GridViewColumn Header="Ár (Ft)" Width="120" DisplayMemberBinding="{Binding Price}"/>
+            <GridViewColumn Header="Szín" Width="100" DisplayMemberBinding="{Binding Color}"/>
+        </GridView>
+    </ListView.View>
+</ListView>
+```
+1. x:Name="modelList": Azonosító a C# kód számára.
+2. Grid.Row="1": A jobb oldali Grid alsó sorába kerül.
+3. <"GridView">: Táblázatos nézetet biztosít oszlopokkal.
+4. DisplayMemberBinding="{Binding ModelName}": Az oszlop a CarModel osztály ModelName tulajdonságát jeleníti meg, hasonlóan a többi oszlop.
+
+### C# (MainWindow.xaml.cs)
+Adatmodellek: Két osztály definiálja az adatstruktúrát:
+```c#
+public class CarBrand
+{
+    public string BrandName { get; set; }
+    public List<CarModel> Models { get; set; }
+}
+
+public class CarModel
+{
+    public string ModelName { get; set; }
+    public int Year { get; set; }
+    public double Price { get; set; }
+    public string Color { get; set; }
+}
+```
+1. CarBrand: Egy márkát reprezentál, a BrandName a neve, a Models pedig a hozzá tartozó modellek listája.
+2. CarModel: Egy modellt ír le, tulajdonságai a ListView oszlopaihoz kötődnek.
+3. A { get; set; } lehetővé teszi az adatkapcsolást a WPF-ben.
+
+### Inicializálás (InitializeData)
+```c#
+private void InitializeData()
+{
+    List<CarBrand> brands = new List<CarBrand>
+    {
+        new CarBrand
+        {
+            BrandName = "Toyota",
+            Models = new List<CarModel>
+            {
+                new CarModel { ModelName = "Corolla", Year = 2022, Price = 8500000, Color = "Fehér" },
+                new CarModel { ModelName = "RAV4", Year = 2023, Price = 12500000, Color = "Fekete" }
+            }
+        }
+        // További márkák...
+    };
+    brandTree.ItemsSource = brands;
+}
+```
+1. List<CarBrand> brands: Lista a márkákról, amelyet a TreeView adatforrásaként használunk.
+2. new CarBrand { ... }: Egy új márka objektum létrehozása és feltöltése adatokkal.
+3. brandTree.ItemsSource = brands: A TreeView számára megadja, hogy a brands listát használja, így a Binding a BrandName-eket megjeleníti.
+
+### Márka kiválasztása (BrandTree_SelectedItemChanged)
+```c#
+private void BrandTree_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
+{
+    if (brandTree.SelectedItem is CarBrand selectedBrand)
+    {
+        modelList.ItemsSource = selectedBrand.Models;
+    }
+}
+```
+1. brandTree.SelectedItem: A TreeView-ban kiválasztott elem (egy CarBrand objektum).
+2. is CarBrand selectedBrand: Ellenőrzi, hogy az elem valóban CarBrand, és átadja a selectedBrand változónak.
+3. modelList.ItemsSource = selectedBrand.Models: A ListView adatforrását a kiválasztott márka Models listájára állítja, így a modellek megjelennek.
+
+### Új modell hozzáadása (AddModelButton_Click)
+```c#
+private void AddModelButton_Click(object sender, RoutedEventArgs e)
+{
+    if (brandTree.SelectedItem is CarBrand selectedBrand)
+    {
+        if (string.IsNullOrWhiteSpace(modelNameInput.Text) || /* további ellenőrzések */)
+        {
+            MessageBox.Show("Kérlek, töltsd ki az összes mezőt!");
+            return;
+        }
+
+        if (!int.TryParse(yearInput.Text, out int year) || !double.TryParse(priceInput.Text, out double price))
+        {
+            MessageBox.Show("Az évjáratnak és az árnak számnak kell lennie!");
+            return;
+        }
+
+        CarModel newModel = new CarModel
+        {
+            ModelName = modelNameInput.Text,
+            Year = year,
+            Price = price,
+            Color = colorInput.Text
+        };
+
+        selectedBrand.Models.Add(newModel);
+        modelList.ItemsSource = null;
+        modelList.ItemsSource = selectedBrand.Models;
+        // Mezők törlése
+    }
+}
+```
+1. if (brandTree.SelectedItem is CarBrand): Ellenőrzi, hogy van-e kiválasztott márka.
+2. string.IsNullOrWhiteSpace(...): Ellenőrzi, hogy minden mező ki van-e töltve.
+3. int.TryParse(...): Átalakítja a szöveget számmá, és hibát jelez, ha nem sikerül.
+4. newModel = new CarModel { ... }: Új modell objektum létrehozása a bevitt adatokkal.
+5. selectedBrand.Models.Add(newModel): Hozzáadja a modellt a listához.
+6. modelList.ItemsSource = null; ... = selectedBrand.Models: Frissíti a ListView-t az új adatokkal.
+
+### Használat
+1. Indítás: A program betölti az előre definiált márkákat és modelleket.
+2. Navigáció: Kattints egy márkára a TreeView-ban, hogy a ListView-ban megjelenjenek a modellek.
+3. Új modell hozzáadása:
+4. Válassz ki egy márkát.
+5. Töltsd ki az űrlapot.
+6. Kattints az "Új modell hozzáadása" gombra.
+
+
+<details> <summary>MainWindow.xaml</summary>
+  
+```xml
+<Window x:Class="Wpf_1_GameShop.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Wpf_1_GameShop"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="450" Width="800">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto" />
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+
+        <TabControl Grid.Row="0">
+            <TabItem Header="Availible Games">
+                <ListView x:Name="GameList">
+                    <ListView.View>
+                        <GridView>
+                            <GridViewColumn Header="Name" Width="150" DisplayMemberBinding="{Binding GameName}"/>
+                            <GridViewColumn Header="Stile" Width="80" DisplayMemberBinding="{Binding Style}"/>
+                            <GridViewColumn Header="Price" Width="120" DisplayMemberBinding="{Binding Price}"/>
+                            <GridViewColumn Header="Ratings" Width="100" DisplayMemberBinding="{Binding Ratings}"/>
+                            <GridViewColumn Header="PEG" Width="100" DisplayMemberBinding="{Binding PEG}"/>
+                        </GridView>
+                    </ListView.View>
+                </ListView>
+            </TabItem>
+            <TabItem Header="Customers">
+                <ListView x:Name="CustomerList" Grid.Row="1">
+                    <ListView.View>
+                        <GridView>
+                            <GridViewColumn Header="Name" Width="150" DisplayMemberBinding="{Binding CustomerName}"/>
+                            <GridViewColumn Header="Year of Birth" Width="80" DisplayMemberBinding="{Binding Year}"/>
+                            <GridViewColumn Header="Credit card number" Width="120" DisplayMemberBinding="{Binding CreditCard}"/>
+
+                        </GridView>
+                    </ListView.View>
+                </ListView>
+            </TabItem>
+            <TabItem Header="Pairing">
+                <StackPanel Margin="10">
+                    <TextBlock Text="Customer's name:" FontWeight="Bold"/>
+                    <ComboBox x:Name="CustomerCombo" DisplayMemberPath="CustomerName" Width="200"/>
+
+                    <TextBlock Text="Game name:" FontWeight="Bold"/>
+                    <ComboBox x:Name="GameCombo" DisplayMemberPath="GameName" Width="200"/>
+
+                    <Button Content="Save" Click="SaveOrderToFile" Width="150"/>
+
+                    <TextBlock x:Name="StatusText" FontWeight="Bold" Foreground="Green"/>
+                </StackPanel>
+            </TabItem>
+            <TabItem Header="Orders" Height="20" VerticalAlignment="Bottom">
+                <StackPanel Margin="10">
+                    <TextBlock Text="Select customer:" FontWeight="Bold"/>
+                    <ComboBox x:Name="OrderCustomerCombo" DisplayMemberPath="CustomerName" Width="200" SelectionChanged="OrderCustomerCombo_SelectionChanged"/>
+
+                    <TextBlock Text="Select game:" FontWeight="Bold" Margin="10,10,0,0"/>
+                    <ComboBox x:Name="OrderGameCombo" DisplayMemberPath="GameName" Width="200" SelectionChanged="OrderGameCombo_SelectionChanged"/>
+                    <Button Content="Show orders" Width="150" Margin="0,10,0,0" Click="ShowOrders_Click"/>
+
+                    <TextBlock Text="Results:" FontWeight="Bold" Margin="10,10,0,5"/>
+                    <ListView x:Name="OrderResultsListView" Width="400" Height="200">
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn Header="Customer Name" Width="200" DisplayMemberBinding="{Binding CustomerName}"/>
+                                <GridViewColumn Header="Game Name" Width="200" DisplayMemberBinding="{Binding GameName}"/>
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
+                </StackPanel>
+            </TabItem>
+        </TabControl>
+
+    </Grid>
+</Window>
+
+
+``` 
+</details><details> <summary>MainWindow.xaml.cs</summary>
+  
+```c# 
+using System.Collections.ObjectModel;
+using System.Text;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Data;
+using System.Windows.Documents;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.Windows.Navigation;
+using System.Windows.Shapes;
+using System.IO;
+
+namespace Wpf_1_GameShop
+{
+    /// <summary>
+    /// Interaction logic for MainWindow.xaml
+    /// </summary>
+    public partial class MainWindow : Window
+    {
+        public ObservableCollection<GameInfo> Games { get; set; } = new();
+        public ObservableCollection<CustomerInfo> Customers { get; set; } = new();
+
+
+
+        public MainWindow()
+        {
+            InitializeComponent();
+
+            LoadGames("games.txt");
+            LoadCustomers("customers.txt");
+            //LoadSave("orders.txt");
+
+            GameList.ItemsSource = Games;
+            CustomerList.ItemsSource = Customers;
+
+            CustomerCombo.ItemsSource = Customers;
+            GameCombo.ItemsSource = Games;
+
+            OrderCustomerCombo.ItemsSource = Customers;
+            OrderGameCombo.ItemsSource = Games;
+
+
+        }
+
+        public class GameInfo
+        {
+            public string GameName { get; set; }
+            public string Style { get; set; }
+            public int Price { get; set; }
+            public string Ratings { get; set; }
+            public string PEG { get; set; }
+
+        }
+
+        public class CustomerInfo
+        {
+            public string CustomerName { get; set; }
+            public int Year { get; set; }
+            public double CreditCard { get; set; }
+
+        }
+
+        public class OrderInfo
+        {
+            public string CustomerName { get; set; }
+            public string GameName { get; set; }
+        }
+
+        private void LoadGames(string filePath)
+        {
+            if (!File.Exists(filePath))
+                return;
+
+            foreach (string line in File.ReadAllLines(filePath))
+            {
+                string[] parts = line.Split(';');
+                if (parts.Length == 5)
+                {
+                    int price = 0;
+                    if (int.TryParse(parts[2], out var parsedPrice))
+                    {
+                        price = parsedPrice;
+                    }
+
+                    Games.Add(new GameInfo
+                    {
+                        GameName = parts[0],
+                        Style = parts[1],
+                        Price = price,
+                        Ratings = parts[3],
+                        PEG = parts[4]
+                    });
+                }
+            }
+        }
+
+
+        private void LoadCustomers(string filePath)
+        {
+            if (!File.Exists(filePath))
+                return;
+
+            foreach (string line in File.ReadAllLines(filePath))
+            {
+                string[] parts = line.Split(';');
+                if (parts.Length == 3)
+                {
+                    int year = 0;
+                    if (int.TryParse(parts[1], out var parsedYear))
+                    {
+                        year = parsedYear;
+                    }
+
+                    double creditCard = 0;
+                    if (double.TryParse(parts[2], out var parsedCard))
+                    {
+                        creditCard = parsedCard;
+                    }
+
+                    Customers.Add(new CustomerInfo
+                    {
+                        CustomerName = parts[0],
+                        Year = year,
+                        CreditCard = creditCard
+                    });
+                }
+            }
+        }
+
+        private void SaveOrderToFile(object sender, RoutedEventArgs e)
+        {
+            var selectedCustomer = CustomerCombo.SelectedItem as CustomerInfo;
+            var selectedGame = GameCombo.SelectedItem as GameInfo;
+
+            if (selectedCustomer == null || selectedGame == null)
+            {
+                StatusText.Text = "Please select both of them!";
+                StatusText.Foreground = Brushes.Red;
+                return;
+            }
+
+            string line = $"{selectedCustomer.CustomerName};{selectedGame.GameName}";
+            string path = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "orders.txt");
+
+            try
+            {
+                File.AppendAllText(path, line + Environment.NewLine);
+                StatusText.Text = "Save successful!";
+                StatusText.Foreground = Brushes.Green;
+            }
+            catch (Exception ex)
+            {
+                StatusText.Text = "Error";
+                StatusText.Foreground = Brushes.Red;
+            }
+        }
+        
+        private void LoadSave(string filePath)
+        {
+            if (!File.Exists(filePath))
+                return;
+
+            foreach (string line in File.ReadAllLines(filePath))
+            {
+                string[] parts = line.Split(';');
+
+                    Customers.Add(new CustomerInfo //ordercombobox
+                    {
+                        CustomerName = parts[0]
+                    });
+
+                    Games.Add(new GameInfo //gamecombobox
+                    {
+                        GameName = parts[1]
+                    });
+            }
+        }
+
+        private void OrderCustomerCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (OrderCustomerCombo.SelectedItem != null)
+            {
+                OrderGameCombo.SelectedItem = null;
+            }
+        }
+
+        private void OrderGameCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (OrderGameCombo.SelectedItem != null)
+            {
+                OrderCustomerCombo.SelectedItem = null;
+            }
+        }
+
+        private void ShowOrders_Click(object sender, RoutedEventArgs e)
+        {
+            var selectedCustomer = OrderCustomerCombo.SelectedItem as CustomerInfo;
+            var selectedGame = OrderGameCombo.SelectedItem as GameInfo;
+
+            List<OrderInfo> allOrders = new List<OrderInfo>();
+
+            // Fájl beolvasás
+            if (File.Exists("orders.txt"))
+            {
+                foreach (string line in File.ReadAllLines("orders.txt"))
+                {
+                    string[] parts = line.Split(';');
+                    if (parts.Length == 2)
+                    {
+                        allOrders.Add(new OrderInfo
+                        {
+                            CustomerName = parts[0],
+                            GameName = parts[1]
+                        });
+                    }
+                }
+            }
+
+            // Szűrés
+            List<OrderInfo> filteredOrders = new List<OrderInfo>();
+
+            if (selectedCustomer != null)
+            {
+                filteredOrders = allOrders
+                    .Where(order => order.CustomerName == selectedCustomer.CustomerName)
+                    .ToList();
+            }
+            else if (selectedGame != null)
+            {
+                filteredOrders = allOrders
+                    .Where(order => order.GameName == selectedGame.GameName)
+                    .ToList();
+            }
+            else
+            {
+                filteredOrders.Clear();
+            }
+
+            // ListView frissítése
+            OrderResultsListView.ItemsSource = filteredOrders;
+        }
+    }
+}
+
+``` 
+</details> 
