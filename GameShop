@@ -37,158 +37,235 @@ A felület két fő sorra oszlik egy `Grid` segítségével:
 1. A Grid.RowDefinitons két sort hoz létre.
 2. A Height="450" Width="800" az ablak méretét állítja be pixelben.
 
-
-1. x:Name="brandTree": Egyedi azonosító, hogy a C# kódban hivatkozhassunk rá.
-2. Grid.Column="0": A bal oszlopba kerül.
-3. Margin="10": 10 pixel távolság a szélektől.
-4. SelectedItemChanged="BrandTree_SelectedItemChanged": Eseménykezelő, amely akkor fut, ha a felhasználó kiválaszt egy márkát.
-5. <"DataTemplate">: Meghatározza, hogyan jelenjen meg egy elem (itt a CarBrand objektum).
-6. Text="{Binding BrandName}": A CarBrand osztály BrandName tulajdonságát köti a TextBlock-hoz, így a márkák nevei látszanak.
-
-### Űrlap definíciója:
+### Párosítás definíciója:
 ```c#
-<StackPanel Grid.Row="0" Orientation="Vertical" Margin="0,0,0,10">
-    <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
-        <TextBlock Text="Modell neve:" Width="80"/>
-        <TextBox x:Name="modelNameInput" Width="150"/>
+<TabItem Header="Pairing">
+    <StackPanel Margin="10">
+        <TextBlock Text="Customer's name:" FontWeight="Bold"/>
+        <ComboBox x:Name="CustomerCombo" DisplayMemberPath="CustomerName" Width="200"/>
+
+        <TextBlock Text="Game name:" FontWeight="Bold"/>
+        <ComboBox x:Name="GameCombo" DisplayMemberPath="GameName" Width="200"/>
+
+        <Button Content="Save" Click="SaveOrderToFile" Width="150"/>
+
+        <TextBlock x:Name="StatusText" FontWeight="Bold" Foreground="Green"/>
     </StackPanel>
-    <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
-        <TextBlock Text="Évjárat:" Width="80"/>
-        <TextBox x:Name="yearInput" Width="150"/>
-    </StackPanel>
-    <!-- Ár és Szín hasonlóan -->
-    <Button x:Name="addModelButton" Content="Új modell hozzáadása" Width="150" Click="AddModelButton_Click"/>
-</StackPanel>
+</TabItem>
 ```
-1. StackPanel Orientation="Vertical": Függőlegesen rendezi a mezőket.
-2. Orientation="Horizontal": Minden sorban a TextBlock (címke) és a TextBox (bemenet) vízszintesen helyezkedik el.
-3. x:Name="modelNameInput": Azonosító a TextBox-nak, hogy a C# kódban elérjük a beírt szöveget.
-4. Click="AddModelButton_Click": A gomb megnyomásakor futó eseménykezelő neve.
+1. StackPanel: Rendezi a mezőket.
+2. ComboBox: Választási lehetőséget kínáló menü. 
+3. x:Name="StatusText": Azonosító a TextBlock-nak, hogy a C# kódban elérjük a beírt szöveget.
+4. Click="SaveOrderToFile": A gomb megnyomásakor futó eseménykezelő neve.
 
-### ListView definíciója
+### Példa a ListView definíciója
 ```c#
-<ListView x:Name="modelList" Grid.Row="1">
+<ListView x:Name="GameList">
     <ListView.View>
         <GridView>
-            <GridViewColumn Header="Modell" Width="150" DisplayMemberBinding="{Binding ModelName}"/>
-            <GridViewColumn Header="Évjárat" Width="80" DisplayMemberBinding="{Binding Year}"/>
-            <GridViewColumn Header="Ár (Ft)" Width="120" DisplayMemberBinding="{Binding Price}"/>
-            <GridViewColumn Header="Szín" Width="100" DisplayMemberBinding="{Binding Color}"/>
+            <GridViewColumn Header="Name" Width="150" DisplayMemberBinding="{Binding GameName}"/>
+            <GridViewColumn Header="Stile" Width="80" DisplayMemberBinding="{Binding Style}"/>
+            <GridViewColumn Header="Price" Width="120" DisplayMemberBinding="{Binding Price}"/>
+            <GridViewColumn Header="Ratings" Width="100" DisplayMemberBinding="{Binding Ratings}"/>
+            <GridViewColumn Header="PEG" Width="100" DisplayMemberBinding="{Binding PEG}"/>
         </GridView>
     </ListView.View>
 </ListView>
 ```
-1. x:Name="modelList": Azonosító a C# kód számára.
-2. Grid.Row="1": A jobb oldali Grid alsó sorába kerül.
-3. <"GridView">: Táblázatos nézetet biztosít oszlopokkal.
-4. DisplayMemberBinding="{Binding ModelName}": Az oszlop a CarModel osztály ModelName tulajdonságát jeleníti meg, hasonlóan a többi oszlop.
+1. x:Name="GamelList": Azonosító a C# kód számára.
+2. <"GridView">: Táblázatos nézetet biztosít oszlopokkal.
+3. DisplayMemberBinding="{Binding GameName}": Az oszlop a GameInfo osztály GameName tulajdonságát jeleníti meg, hasonlóan a többi oszlop.
 
 ### C# (MainWindow.xaml.cs)
 Adatmodellek: Két osztály definiálja az adatstruktúrát:
 ```c#
-public class CarBrand
+public class GameInfo
 {
-    public string BrandName { get; set; }
-    public List<CarModel> Models { get; set; }
+    public string GameName { get; set; }
+    public string Style { get; set; }
+    public int Price { get; set; }
+    public string Ratings { get; set; }
+    public string PEGI { get; set; }
+
 }
 
-public class CarModel
+public class CustomerInfo
 {
-    public string ModelName { get; set; }
+    public string CustomerName { get; set; }
     public int Year { get; set; }
-    public double Price { get; set; }
-    public string Color { get; set; }
+    public double CreditCard { get; set; }
+
+}
+
+public class OrderInfo
+{
+    public string CustomerName { get; set; }
+    public string GameName { get; set; }
+}
+
+```
+1. GameInfo: Egy játékadatbázist reprezentál, a GameName a neve, a Style a műfaja, a Price az ára, a Ratings az értékelése, a PEGI pedig a korhatáros besorolása az adott játéknak.
+2. CustomerInfo: Egy vásárló adatait jeleníti meg, CustomerName a neve, Year, a születési éve, a CreditCard pedig a bankkártyaszáma.
+3. OrderInfo: Ez a GameInfo és CustomerInfo név tulajdonságait kapcsolja össze.
+4. A { get; set; } lehetővé teszi az adatkapcsolást a WPF-ben.
+
+### Fájlbeolvasás("games.txt")
+```c#
+private void LoadGames(string filePath)
+{
+    if (!File.Exists(filePath))
+        return;
+
+    foreach (string line in File.ReadAllLines(filePath))
+    {
+        string[] parts = line.Split(';');
+        if (parts.Length == 5)
+        {
+            int price = 0;
+            if (int.TryParse(parts[2], out var parsedPrice))
+            {
+                price = parsedPrice;
+            }
+
+            Games.Add(new GameInfo
+            {
+                GameName = parts[0],
+                Style = parts[1],
+                Price = price,
+                Ratings = parts[3],
+                PEGI = parts[4]
+            });
+        }
+    }
 }
 ```
-1. CarBrand: Egy márkát reprezentál, a BrandName a neve, a Models pedig a hozzá tartozó modellek listája.
-2. CarModel: Egy modellt ír le, tulajdonságai a ListView oszlopaihoz kötődnek.
-3. A { get; set; } lehetővé teszi az adatkapcsolást a WPF-ben.
+1. Hibaellenőrzés: Ha létezik a fájl, csak akkor járja végig.
+2. ";" karakterenként szétválassza a beolvasott adatokat, és eltárolja a parts string tömbbe.
+3. Ár int változóvá alakítása. 
+4. A Games gyűjteményhez ad egy GameInfo típusú adatot, mely feltöltésre kerül a megfelelő adattípusokkal.
 
-### Inicializálás (InitializeData)
+### Párosítás elmentése "orders.txt" fájlba
 ```c#
-private void InitializeData()
+ private void SaveOrderToFile(object sender, RoutedEventArgs e)
+ {
+     var selectedCustomer = CustomerCombo.SelectedItem as CustomerInfo;
+     var selectedGame = GameCombo.SelectedItem as GameInfo;
+
+     if (selectedCustomer == null || selectedGame == null)
+     {
+         StatusText.Text = "Please select both of them!";
+         StatusText.Foreground = Brushes.Red;
+         return;
+     }
+
+     string line = $"{selectedCustomer.CustomerName};{selectedGame.GameName}";
+     string path = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "orders.txt");
+
+     try
+     {
+         File.AppendAllText(path, line + Environment.NewLine);
+         StatusText.Text = "Save successful!";
+         StatusText.Foreground = Brushes.Green;
+     }
+     catch (Exception ex)
+     {
+         StatusText.Text = "Error";
+         StatusText.Foreground = Brushes.Red;
+     }
+ }
+        
+```
+1. A ComboBoxban kiválasztott vásárlót és játékot felvesszük 2 változóba, ezeknek jelenlétét ellenőrzi. 
+2. Formátumát, illetve a mentés helyét megadjuk(nem a felhasználó, hanem a program ezt egy bizonyos előre beállított helyre menti).
+3. Hibakezelés: Ha hiba adódik a mentés közben, akkor jelzést ad.
+
+### Felhasználó-Játékok/Játék-Felhasználók táblázása
+```c#
+private void ShowOrders_Click(object sender, RoutedEventArgs e)
 {
-    List<CarBrand> brands = new List<CarBrand>
+    var selectedCustomer = OrderCustomerCombo.SelectedItem as CustomerInfo;
+    var selectedGame = OrderGameCombo.SelectedItem as GameInfo;
+
+    List<OrderInfo> allOrders = new List<OrderInfo>();
+
+    // Fájl beolvasás
+    if (File.Exists("orders.txt"))
     {
-        new CarBrand
+        foreach (string line in File.ReadAllLines("orders.txt"))
         {
-            BrandName = "Toyota",
-            Models = new List<CarModel>
+            string[] parts = line.Split(';');
+            if (parts.Length == 2)
             {
-                new CarModel { ModelName = "Corolla", Year = 2022, Price = 8500000, Color = "Fehér" },
-                new CarModel { ModelName = "RAV4", Year = 2023, Price = 12500000, Color = "Fekete" }
+                allOrders.Add(new OrderInfo
+                {
+                    CustomerName = parts[0],
+                    GameName = parts[1]
+                });
             }
         }
-        // További márkák...
-    };
-    brandTree.ItemsSource = brands;
+    }
+
+    List<OrderInfo> filteredOrders = new List<OrderInfo>();
+
+    if (selectedCustomer != null)
+    {
+        filteredOrders = allOrders
+            .Where(order => order.CustomerName == selectedCustomer.CustomerName)
+            .ToList();
+    }
+    else if (selectedGame != null)
+    {
+        filteredOrders = allOrders
+            .Where(order => order.GameName == selectedGame.GameName)
+            .ToList();
+    }
+    else
+    {
+        filteredOrders.Clear();
+    }
+
+    OrderResultsListView.ItemsSource = filteredOrders;
 }
 ```
-1. List<CarBrand> brands: Lista a márkákról, amelyet a TreeView adatforrásaként használunk.
-2. new CarBrand { ... }: Egy új márka objektum létrehozása és feltöltése adatokkal.
-3. brandTree.ItemsSource = brands: A TreeView számára megadja, hogy a brands listát használja, így a Binding a BrandName-eket megjeleníti.
+1. A Párosítást követően mentésre került "orders.txt" fájlból beolvassuk az adatokat.
+2. Létrehozzuk a filteredOrders listát, melynek OrderInfo a típusa.
+3. LINQ kifejezések használata a hatékony és olvasható kód érdekében. 
+4. Ha az egyik ComboBox már tartalmaz adatot, a másik nem tartalmazhat. Ha választani akarunk mindkettőből, az egyik adat értéke null.
+5. Az OrderResultsListView táblázza a megfelelő adatokat.
 
-### Márka kiválasztása (BrandTree_SelectedItemChanged)
+### Vásárló és Játék működése
 ```c#
-private void BrandTree_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
+
+private void OrderCustomerCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
 {
-    if (brandTree.SelectedItem is CarBrand selectedBrand)
+    if (OrderCustomerCombo.SelectedItem != null)
     {
-        modelList.ItemsSource = selectedBrand.Models;
+        OrderGameCombo.SelectedItem = null;
     }
 }
-```
-1. brandTree.SelectedItem: A TreeView-ban kiválasztott elem (egy CarBrand objektum).
-2. is CarBrand selectedBrand: Ellenőrzi, hogy az elem valóban CarBrand, és átadja a selectedBrand változónak.
-3. modelList.ItemsSource = selectedBrand.Models: A ListView adatforrását a kiválasztott márka Models listájára állítja, így a modellek megjelennek.
 
-### Új modell hozzáadása (AddModelButton_Click)
-```c#
-private void AddModelButton_Click(object sender, RoutedEventArgs e)
+private void OrderGameCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
 {
-    if (brandTree.SelectedItem is CarBrand selectedBrand)
+    if (OrderGameCombo.SelectedItem != null)
     {
-        if (string.IsNullOrWhiteSpace(modelNameInput.Text) || /* további ellenőrzések */)
-        {
-            MessageBox.Show("Kérlek, töltsd ki az összes mezőt!");
-            return;
-        }
-
-        if (!int.TryParse(yearInput.Text, out int year) || !double.TryParse(priceInput.Text, out double price))
-        {
-            MessageBox.Show("Az évjáratnak és az árnak számnak kell lennie!");
-            return;
-        }
-
-        CarModel newModel = new CarModel
-        {
-            ModelName = modelNameInput.Text,
-            Year = year,
-            Price = price,
-            Color = colorInput.Text
-        };
-
-        selectedBrand.Models.Add(newModel);
-        modelList.ItemsSource = null;
-        modelList.ItemsSource = selectedBrand.Models;
-        // Mezők törlése
+        OrderCustomerCombo.SelectedItem = null;
     }
 }
+ 
 ```
-1. if (brandTree.SelectedItem is CarBrand): Ellenőrzi, hogy van-e kiválasztott márka.
-2. string.IsNullOrWhiteSpace(...): Ellenőrzi, hogy minden mező ki van-e töltve.
-3. int.TryParse(...): Átalakítja a szöveget számmá, és hibát jelez, ha nem sikerül.
-4. newModel = new CarModel { ... }: Új modell objektum létrehozása a bevitt adatokkal.
-5. selectedBrand.Models.Add(newModel): Hozzáadja a modellt a listához.
-6. modelList.ItemsSource = null; ... = selectedBrand.Models: Frissíti a ListView-t az új adatokkal.
+1. Megtiltja, hogy mindkettő ComboBox tartalmazzon adatot a rendeléseknél.
+
 
 ### Használat
-1. Indítás: A program betölti az előre definiált márkákat és modelleket.
-2. Navigáció: Kattints egy márkára a TreeView-ban, hogy a ListView-ban megjelenjenek a modellek.
-3. Új modell hozzáadása:
-4. Válassz ki egy márkát.
-5. Töltsd ki az űrlapot.
-6. Kattints az "Új modell hozzáadása" gombra.
+1. Indítás: A program betölti az előre definiált játékokat és vásárlókat.
+2. Navigáció: TabItemek között lehet váltogatni.
+3. Játékok és vásárlók párosítása:
+   - Válassz ki egy játék nevét.
+   -Válassz ki egy vásárló nevét.
+   -Kattints a "Save" gombra.
+4. Rendelések kiírása:
+  -Válassz ki egy vásárló vagy egy játék nevét
+  -Kilistázza a kiválasztott adathoz való megfelelő adatot.
 
 
 <details> <summary>MainWindow.xaml</summary>
@@ -217,7 +294,7 @@ private void AddModelButton_Click(object sender, RoutedEventArgs e)
                             <GridViewColumn Header="Stile" Width="80" DisplayMemberBinding="{Binding Style}"/>
                             <GridViewColumn Header="Price" Width="120" DisplayMemberBinding="{Binding Price}"/>
                             <GridViewColumn Header="Ratings" Width="100" DisplayMemberBinding="{Binding Ratings}"/>
-                            <GridViewColumn Header="PEG" Width="100" DisplayMemberBinding="{Binding PEG}"/>
+                            <GridViewColumn Header="PEGI" Width="100" DisplayMemberBinding="{Binding PEGI}"/>
                         </GridView>
                     </ListView.View>
                 </ListView>
@@ -328,7 +405,7 @@ namespace Wpf_1_GameShop
             public string Style { get; set; }
             public int Price { get; set; }
             public string Ratings { get; set; }
-            public string PEG { get; set; }
+            public string PEGI { get; set; }
 
         }
 
@@ -368,7 +445,7 @@ namespace Wpf_1_GameShop
                         Style = parts[1],
                         Price = price,
                         Ratings = parts[3],
-                        PEG = parts[4]
+                        PEGI = parts[4]
                     });
                 }
             }
@@ -432,27 +509,6 @@ namespace Wpf_1_GameShop
             {
                 StatusText.Text = "Error";
                 StatusText.Foreground = Brushes.Red;
-            }
-        }
-        
-        private void LoadSave(string filePath)
-        {
-            if (!File.Exists(filePath))
-                return;
-
-            foreach (string line in File.ReadAllLines(filePath))
-            {
-                string[] parts = line.Split(';');
-
-                    Customers.Add(new CustomerInfo //ordercombobox
-                    {
-                        CustomerName = parts[0]
-                    });
-
-                    Games.Add(new GameInfo //gamecombobox
-                    {
-                        GameName = parts[1]
-                    });
             }
         }
 
