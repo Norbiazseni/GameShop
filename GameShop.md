@@ -1,5 +1,8 @@
 # Játékkereskedés WPF Projekt
 
+![image](https://github.com/user-attachments/assets/4fd5c064-f444-4868-a38d-f6ac0c4f09d3)
+
+
 Ez a projekt egy WPF alkalmazás, amely bemutatja a ListView és ComboBox vezérlők használatát egy játékbolt kontextusában. A program lehetővé teszi játékok és vásárlók kezelését, valamint rendelések létrehozását.
 ## Funkcionalitás
 
