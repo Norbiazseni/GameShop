@@ -253,7 +253,7 @@ private void OrderGameCombo_SelectionChanged(object sender, SelectionChangedEven
 }
  
 ```
-1. Megtiltja, hogy mindkettő ComboBox tartalmazzon adatot a rendeléseknél.
+1. Megtiltja, hogy mindkettő ComboBox tartalmazzon kiválasztott adatot a rendeléseknél.
 
 
 ### Használat
