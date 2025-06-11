@@ -77,7 +77,7 @@ A felület két fő sorra oszlik egy `Grid` segítségével:
 3. DisplayMemberBinding="{Binding GameName}": Az oszlop a GameInfo osztály GameName tulajdonságát jeleníti meg, hasonlóan a többi oszlop.
 
 ### C# (MainWindow.xaml.cs)
-Adatmodellek: Két osztály definiálja az adatstruktúrát:
+Adatmodellek: Három osztály definiálja az adatstruktúrát:
 ```c#
 public class GameInfo
 {
