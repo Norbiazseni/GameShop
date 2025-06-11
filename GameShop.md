@@ -47,7 +47,7 @@ A felület két fő sorra oszlik egy `Grid` segítségével:
         <TextBlock Text="Game name:" FontWeight="Bold"/>
         <ComboBox x:Name="GameCombo" DisplayMemberPath="GameName" Width="200"/>
 
-        <Button Content="Save" Click="SaveOrderToFile" Width="150"/>
+        <Button Content="Save" Click="SaveOrderToFile" Width="150" Margin="20"/>
 
         <TextBlock x:Name="StatusText" FontWeight="Bold" Foreground="Green"/>
     </StackPanel>
