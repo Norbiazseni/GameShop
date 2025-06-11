@@ -255,6 +255,101 @@ private void OrderGameCombo_SelectionChanged(object sender, SelectionChangedEven
 ```
 1. Megtiltja, hogy mindkettő ComboBox tartalmazzon kiválasztott adatot a rendeléseknél.
 
+### Új felhasználó/játék hozzáadása
+-Játék hozzáadása:
+```c#
+private void AddGameButton_Click(object sender, RoutedEventArgs e)
+{
+    if (string.IsNullOrWhiteSpace(GameNameInput.Text) ||
+            string.IsNullOrWhiteSpace(StyleInput.Text) ||
+            string.IsNullOrWhiteSpace(PriceInput.Text) ||
+            string.IsNullOrWhiteSpace(RatingInput.Text) ||
+            string.IsNullOrWhiteSpace(PEGIInput.Text))
+    {
+        MessageBox.Show("Don't leave blank spaces!");
+        return;
+    }
+
+    if (!int.TryParse(PriceInput.Text, out int price))
+    {
+        MessageBox.Show("Invalid Price!");
+        return;
+    }
+
+    GameInfo game = new GameInfo
+    {
+        GameName = GameNameInput.Text,
+        Style = StyleInput.Text,
+        Price = price,
+        Ratings = RatingInput.Text,
+        PEGI = PEGIInput.Text
+    };
+
+    Games.Add(game);
+
+    string newLine = $"{game.GameName};{game.Style};{game.Price};{game.Ratings};{game.PEGI}";
+    File.AppendAllText("games.txt", newLine + Environment.NewLine);
+
+    GameNameInput.Text = "";
+    StyleInput.Text = "";
+    PriceInput.Text = "";
+    RatingInput.Text = "";
+    PEGIInput.Text = "";
+
+    MessageBox.Show("New game added!");
+}
+```
+-Vásárló hozzáadása:
+```c#
+private void AddCustomerButton_Click(object sender, RoutedEventArgs e)
+{
+    if (string.IsNullOrWhiteSpace(CustomerNameInput.Text) ||
+        string.IsNullOrWhiteSpace(CustomerYearInput.Text) ||
+        string.IsNullOrWhiteSpace(CustomerCardInput.Text))
+    {
+        MessageBox.Show("Please fill all fields!");
+        return;
+    }
+
+    if (!int.TryParse(CustomerYearInput.Text, out int year))
+    {
+        MessageBox.Show("Invalid year!");
+        return;
+    }
+
+    if (!double.TryParse(CustomerCardInput.Text, out double creditCard))
+    {
+        MessageBox.Show("Invalid credit card number!");
+        return;
+    }
+
+    CustomerInfo customer = new CustomerInfo
+    {
+        CustomerName = CustomerNameInput.Text,
+        Year = year,
+        CreditCard = creditCard
+    };
+
+    Customers.Add(customer);
+
+    string newLine = $"{customer.CustomerName};{customer.Year};{customer.CreditCard}";
+    File.AppendAllText("customers.txt", newLine + Environment.NewLine);
+
+    CustomerNameInput.Text = "";
+    CustomerYearInput.Text = "";
+    CustomerCardInput.Text = "";
+
+    MessageBox.Show("New customer added!");
+}
+
+```
+
+1. string.IsNullOrWhiteSpace(...): Ellenőrzi, hogy minden mező ki van-e töltve.
+2. int.TryParse(...): Átalakítja a szöveget számmá, és hibát jelez, ha nem sikerül.
+3. CustomerInfo customer = new CustomerInfo { ... }: Új vásárló objektum létrehozása a bevitt adatokkal.
+4. Customers.Add(customer): Hozzáadja a vásárlót a gyűjteményhez.
+
+
 
 ### Használat
 1. Indítás: A program betölti az előre definiált játékokat és vásárlókat.
