@@ -385,7 +385,6 @@ namespace Wpf_1_GameShop
 
             LoadGames("games.txt");
             LoadCustomers("customers.txt");
-            //LoadSave("orders.txt");
 
             GameList.ItemsSource = Games;
             CustomerList.ItemsSource = Customers;
